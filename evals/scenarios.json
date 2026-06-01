@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "stuck_start",
+      "name": "Stuck user gets a tiny restart step",
+      "skill_id": "daily.overcome_procrastination",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I keep avoiding my thesis draft and now I feel frozen.",
+      "expected_behavior": "Validate briefly, identify the stuck object, and offer or ask for one tiny 2-10 minute first action. Continue the skill if the next step is not yet agreed.",
+      "anti_patterns": [
+        "giving a full productivity system",
+        "asking multiple questions",
+        "using shame or discipline language",
+        "creating tasks without a clear user request"
+      ]
+    },
+    {
+      "id": "already_has_next_step",
+      "name": "Clear restart step can complete",
+      "skill_id": "daily.overcome_procrastination",
+      "active_session": {
+        "status": "active",
+        "phase": "choose_next_action",
+        "state": {
+          "stuck_on": "thesis draft"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Could the first step be opening the draft and writing one messy sentence?"
+        }
+      ],
+      "message": "Yes, I can do that for 5 minutes.",
+      "expected_behavior": "Affirm the tiny action, keep it concrete, and call for completion because the user has a clear restart step.",
+      "anti_patterns": [
+        "continuing to ask more planning questions",
+        "expanding the action into a large writing session",
+        "failing to complete the active skill"
+      ]
+    },
+    {
+      "id": "unrelated_handoff",
+      "name": "Unrelated request hands off",
+      "skill_id": "daily.overcome_procrastination",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "Actually can you review my project list instead?",
+      "expected_behavior": "Recognize the user is asking for unrelated work and hand off or cancel the active skill without forcing procrastination coaching.",
+      "anti_patterns": [
+        "forcing a tiny next action for project review",
+        "ignoring the requested topic change",
+        "continuing the wrong skill"
+      ]
+    }
+  ]
+}
+
