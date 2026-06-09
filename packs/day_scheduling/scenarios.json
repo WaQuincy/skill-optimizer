@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "start_plan_day_gather_shape",
+      "name": "Start phase gathers the shape of today",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "Can you help me plan the rest of today?",
+      "expected_behavior": "Ask one brief combined context question about current time, available free time, and fixed commitments. Do not ask for tasks yet.",
+      "anti_patterns": [
+        "asking for the task list immediately",
+        "building a plan before time context",
+        "asking multiple separate questions",
+        "suggesting priorities before the user answers"
+      ]
+    },
+    {
+      "id": "start_calendar_context_available",
+      "name": "Calendar context is used instead of re-asking",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {
+          "fixedCommitments": [
+            "3:00pm dentist",
+            "6:00pm dinner"
+          ]
+        }
+      },
+      "history": [],
+      "message": "I have the afternoon open except the stuff on my calendar. What should I do?",
+      "expected_behavior": "Use the known fixed commitments and ask one follow-up about available free time or energy rather than making the user relist calendar events.",
+      "anti_patterns": [
+        "asking the user to list calendar commitments already provided",
+        "asking the user to confirm fixed commitments already provided",
+        "ignoring fixed commitments",
+        "building a plan that overlaps dentist or dinner",
+        "asking about specific tasks before energy/time shape"
+      ]
+    },
+    {
+      "id": "start_shame_handoff",
+      "name": "Shame about lost time hands off",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I ruined the whole day. I am useless and I do this every time.",
+      "expected_behavior": "Detect shame/emotional flooding and hand off to Emotional Regulation without planning the day.",
+      "anti_patterns": [
+        "building a catch-up plan",
+        "telling the user to salvage the day",
+        "asking for priorities",
+        "minimizing the shame"
+      ]
+    },
+    {
+      "id": "prioritize_ask_top_three",
+      "name": "Prioritize phase asks top-three question",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "prioritize",
+        "state": {
+          "availableHours": "4 hours",
+          "energyLevel": "medium",
+          "fixedCommitments": "none"
+        }
+      },
+      "history": [],
+      "message": "I have about 4 hours and medium energy.",
+      "expected_behavior": "Ask the top-three question or close variant. Do not suggest tasks before the user names what matters.",
+      "anti_patterns": [
+        "offering a task list",
+        "sequencing before priorities are named",
+        "asking about fixed commitments already set to none",
+        "asking more than one question",
+        "pushing for more than three priorities"
+      ]
+    },
+    {
+      "id": "prioritize_cut_more_than_three",
+      "name": "More than three priorities gets cut",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "prioritize",
+        "state": {
+          "availableHours": "5 hours",
+          "energyLevel": "variable",
+          "fixedCommitments": "none"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "If you only get 3 things done today, what would make it a good day?"
+        }
+      ],
+      "message": "Email Sarah, finish the proposal, laundry, groceries, clean the kitchen, and call the bank.",
+      "expected_behavior": "Help cut to three or fewer by asking which can wait until tomorrow without real consequences. Do not plan all six.",
+      "anti_patterns": [
+        "scheduling all six tasks",
+        "silently choosing three without user input",
+        "using a priority matrix",
+        "asking multiple filtering questions"
+      ]
+    },
+    {
+      "id": "sequence_realistic_three_items",
+      "name": "Sequence phase proposes ordered realistic plan",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "sequence",
+        "state": {
+          "availableHours": "4 hours",
+          "energyLevel": "high now, lower later",
+          "fixedCommitments": "none",
+          "topThree": [
+            "finish proposal draft",
+            "reply to Sarah",
+            "laundry"
+          ]
+        }
+      },
+      "history": [],
+      "message": "Those are the three.",
+      "expected_behavior": "Propose a single ordered plan with rough time blocks, hardest task during high energy, lighter tasks later, and transition buffers.",
+      "anti_patterns": [
+        "offering multiple possible schedules",
+        "omitting time blocks",
+        "omitting transition time",
+        "putting laundry before the high-energy proposal work without reason"
+      ]
+    },
+    {
+      "id": "sequence_overfull_day_drop_one",
+      "name": "Overfull day asks what to drop",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "sequence",
+        "state": {
+          "availableHours": "90 minutes",
+          "energyLevel": "low",
+          "fixedCommitments": "call at 4pm",
+          "topThree": [
+            "write proposal",
+            "deep clean kitchen",
+            "do taxes"
+          ]
+        }
+      },
+      "history": [],
+      "message": "Can we fit all three before my call?",
+      "expected_behavior": "Say plainly that all three will not realistically fit and ask one question about which one to drop or push to tomorrow.",
+      "anti_patterns": [
+        "compressing all three into 90 minutes",
+        "shrinking large tasks into unrealistic tiny blocks",
+        "building an aspirational plan",
+        "ignoring low energy",
+        "asking for energy level already present in state",
+        "asking multiple questions"
+      ]
+    },
+    {
+      "id": "sequence_fixed_commitment_boundary",
+      "name": "Fixed commitment boundaries are respected",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "sequence",
+        "state": {
+          "availableHours": "2 hours before school pickup",
+          "energyLevel": "medium",
+          "fixedCommitments": "school pickup at 3pm",
+          "topThree": [
+            "pay bills",
+            "prep dinner",
+            "fold laundry"
+          ]
+        }
+      },
+      "history": [],
+      "message": "I need to be out the door by 2:45.",
+      "expected_behavior": "Build a plan that ends before 2:45, includes transition/out-the-door buffer, and does not overrun the fixed pickup.",
+      "anti_patterns": [
+        "planning work until 3pm",
+        "forgetting out-the-door buffer",
+        "offering equal options",
+        "ignoring the fixed commitment"
+      ]
+    },
+    {
+      "id": "commit_yes_completes",
+      "name": "Confirmed plan completes",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "commit",
+        "state": {
+          "availableHours": "3 hours",
+          "energyLevel": "medium",
+          "fixedCommitments": "none",
+          "topThree": [
+            "invoice",
+            "laundry"
+          ],
+          "orderedPlan": "invoice first, transition, laundry"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Does this feel doable?"
+        }
+      ],
+      "message": "Yes, that feels doable.",
+      "expected_behavior": "Confirm briefly and complete the skill with orderedPlan in state. Do not add more advice or questions.",
+      "anti_patterns": [
+        "asking another planning question",
+        "adding new tasks",
+        "failing to complete",
+        "turning it into motivation coaching"
+      ]
+    },
+    {
+      "id": "commit_adjust_and_reconfirm",
+      "name": "Adjustment is incorporated and reconfirmed",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "commit",
+        "state": {
+          "availableHours": "4 hours",
+          "energyLevel": "low",
+          "fixedCommitments": "none",
+          "topThree": [
+            "email",
+            "groceries"
+          ],
+          "orderedPlan": "email then groceries"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Does this feel doable?"
+        }
+      ],
+      "message": "Groceries first, then email. I need to get out of the house.",
+      "expected_behavior": "Incorporate the order change in one sentence and ask again if it feels doable. Do not re-open the whole plan.",
+      "anti_patterns": [
+        "arguing with the adjustment",
+        "adding more options",
+        "asking several follow-ups",
+        "completing before reconfirmation"
+      ]
+    },
+    {
+      "id": "specific_task_handoff_task_initiation",
+      "name": "Specific stuck task hands off to Task Initiation",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I don't need a day plan. I just need to start the tax form right now.",
+      "expected_behavior": "Recognize this is a specific-task start problem and hand off to Task Initiation instead of planning the day.",
+      "anti_patterns": [
+        "asking for today's available time",
+        "building a day schedule",
+        "ignoring the specific task",
+        "starting task initiation inside this skill"
+      ]
+    },
+    {
+      "id": "explicit_cancel",
+      "name": "Explicit cancellation ends the skill",
+      "skill_id": "daily.day_scheduling",
+      "active_session": {
+        "status": "active",
+        "phase": "prioritize",
+        "state": {
+          "availableHours": "3 hours",
+          "energyLevel": "medium"
+        }
+      },
+      "history": [],
+      "message": "Actually stop. I don't want to plan today.",
+      "expected_behavior": "Respect the stop request and cancel without another planning question.",
+      "anti_patterns": [
+        "trying to persuade the user",
+        "asking why",
+        "offering a smaller plan",
+        "handoffing instead of cancelling"
+      ]
+    }
+  ]
+}

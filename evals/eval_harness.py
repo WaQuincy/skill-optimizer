@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple multi-skill eval harness for EOL Daily Coach skill prompts."""
+"""Pack-based eval harness for EOL Daily Coach skill prompts."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -15,19 +14,21 @@ from typing import Any
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRY_PATH = ROOT / "skills" / "registry.json"
-SCENARIOS_PATH = ROOT / "evals" / "scenarios.json"
-CONFIG_PATH = ROOT / "evals" / "eval_config.json"
-RUBRIC_PATH = ROOT / "evals" / "judge_rubric.md"
+PACKS_DIR = ROOT / "packs"
+DEFAULT_PACK_SLUG = "task_initiation"
 
-SQS_WEIGHTS = {
-    "activation_fit": 0.20,
-    "conversation_control": 0.20,
-    "tiny_next_action": 0.20,
-    "tone": 0.15,
-    "handoff_behavior": 0.15,
-    "state_update_contract": 0.10,
-}
+REQUIRED_PACK_FIELDS = (
+    "id",
+    "slug",
+    "title",
+    "skill_prompt",
+    "scenarios",
+    "judge_rubric",
+    "mutation_notes",
+    "mutation_enabled",
+    "implemented",
+    "score_weights",
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -39,26 +40,81 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def load_skill_registry(root: Path = ROOT) -> list[dict[str, Any]]:
-    data = load_json(root / "skills" / "registry.json")
-    skills = data.get("skills")
-    if not isinstance(skills, list) or not skills:
-        raise ValueError("skills/registry.json must contain a non-empty skills array")
+def pack_path(pack: dict[str, Any], key: str) -> Path:
+    return Path(str(pack["_pack_dir"])) / str(pack[key])
 
+
+def _load_pack_file(pack_json_path: Path) -> dict[str, Any]:
+    pack = load_json(pack_json_path)
+    missing = [field for field in REQUIRED_PACK_FIELDS if field not in pack]
+    if missing:
+        raise ValueError(f"{pack_json_path} missing required fields: {', '.join(missing)}")
+    pack["_pack_dir"] = str(pack_json_path.parent)
+
+    for file_key in ("skill_prompt", "scenarios", "judge_rubric", "mutation_notes"):
+        if not pack_path(pack, file_key).exists():
+            raise ValueError(f"{pack['slug']} {file_key} file does not exist: {pack[file_key]}")
+
+    weights = pack.get("score_weights")
+    if not isinstance(weights, dict) or not weights:
+        raise ValueError(f"{pack['slug']} score_weights must be a non-empty object")
+    return pack
+
+
+def discover_packs(root: Path = ROOT) -> list[dict[str, Any]]:
+    pack_paths = sorted((root / "packs").glob("*/pack.json"))
+    packs = [_load_pack_file(path) for path in pack_paths]
+    seen_slugs: set[str] = set()
+    seen_ids: set[str] = set()
+    for pack in packs:
+        slug = str(pack["slug"])
+        pack_id = str(pack["id"])
+        if slug in seen_slugs:
+            raise ValueError(f"Duplicate pack slug: {slug}")
+        if pack_id in seen_ids:
+            raise ValueError(f"Duplicate pack id: {pack_id}")
+        seen_slugs.add(slug)
+        seen_ids.add(pack_id)
+    return packs
+
+
+def load_pack(root: Path = ROOT, slug: str = DEFAULT_PACK_SLUG) -> dict[str, Any]:
+    for pack in discover_packs(root):
+        if pack["slug"] == slug:
+            return pack
+    raise ValueError(f"Unknown pack: {slug}")
+
+
+def load_pack_scenarios(pack: dict[str, Any]) -> list[dict[str, Any]]:
+    data = load_json(pack_path(pack, "scenarios"))
+    scenarios = data.get("scenarios")
+    if not isinstance(scenarios, list) or not scenarios:
+        raise ValueError(f"{pack['slug']} scenarios must contain a non-empty scenarios array")
     seen: set[str] = set()
-    for skill in skills:
-        skill_id = skill.get("id")
-        prompt_path = skill.get("prompt_path")
-        if not skill_id or not isinstance(skill_id, str):
-            raise ValueError("Every skill needs a string id")
-        if skill_id in seen:
-            raise ValueError(f"Duplicate skill id: {skill_id}")
-        seen.add(skill_id)
-        if not prompt_path or not isinstance(prompt_path, str):
-            raise ValueError(f"{skill_id} needs prompt_path")
-        if not (root / prompt_path).exists():
-            raise ValueError(f"{skill_id} prompt_path does not exist: {prompt_path}")
-    return skills
+    for scenario in scenarios:
+        scenario_id = scenario.get("id")
+        if not scenario_id:
+            raise ValueError(f"{pack['slug']} scenario missing id")
+        if scenario_id in seen:
+            raise ValueError(f"{pack['slug']} duplicate scenario id: {scenario_id}")
+        seen.add(str(scenario_id))
+        if scenario.get("skill_id") != pack["id"]:
+            raise ValueError(f"{pack['slug']} scenario {scenario_id} must use skill_id {pack['id']}")
+    return scenarios
+
+
+def select_scenarios(
+    scenarios: list[dict[str, Any]],
+    *,
+    scenario_id: str | None = None,
+    max_count: int | None = None,
+) -> list[dict[str, Any]]:
+    selected = list(scenarios)
+    if scenario_id:
+        selected = [scenario for scenario in selected if scenario["id"] == scenario_id]
+    if max_count is not None:
+        selected = selected[: max(1, max_count)]
+    return selected
 
 
 def format_active_skill_context(skill_id: str, session: dict[str, Any]) -> str:
@@ -86,12 +142,12 @@ def _format_history(history: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
-def build_skill_input(scenario: dict[str, Any], skill_prompt: str) -> str:
+def build_skill_input(pack: dict[str, Any], scenario: dict[str, Any], skill_prompt: str) -> str:
     session = scenario.get("active_session") or {"status": "active", "phase": "start", "state": {}}
     return "\n\n".join(
         [
             "You are evaluating an Experiment of Life Daily Coach skill turn.",
-            format_active_skill_context(str(scenario["skill_id"]), session),
+            format_active_skill_context(str(pack["id"]), session),
             "[SKILL PROMPT]",
             skill_prompt.strip(),
             "[CONVERSATION HISTORY]",
@@ -102,8 +158,31 @@ def build_skill_input(scenario: dict[str, Any], skill_prompt: str) -> str:
     )
 
 
-def recompute_sqs(judge: dict[str, Any]) -> float:
-    return round(sum(float(judge.get(key, 0)) * weight for key, weight in SQS_WEIGHTS.items()), 2)
+def build_judge_prompt(pack: dict[str, Any], scenario: dict[str, Any], rubric: str, coach_response: str) -> str:
+    scenario_context = {
+        "scenario_id": scenario.get("id"),
+        "skill_id": pack.get("id"),
+        "active_session": scenario.get("active_session") or {},
+        "history": scenario.get("history") or [],
+        "message": scenario.get("message", ""),
+    }
+    return "\n\n".join(
+        [
+            rubric,
+            f"Pack: {pack['title']} ({pack['id']})",
+            "Scenario context:",
+            json.dumps(scenario_context, indent=2, ensure_ascii=False),
+            f"Scenario expected behavior: {scenario.get('expected_behavior', '')}",
+            "Scenario anti-patterns: " + json.dumps(scenario.get("anti_patterns") or []),
+            "Coach response:",
+            coach_response,
+        ]
+    )
+
+
+def recompute_sqs(judge: dict[str, Any], pack: dict[str, Any]) -> float:
+    weights = pack["score_weights"]
+    return round(sum(float(judge.get(key, 0)) * float(weight) for key, weight in weights.items()), 2)
 
 
 def _extract_json_object(text: str) -> dict[str, Any]:
@@ -119,11 +198,19 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 def _make_client():
     from openai import OpenAI
 
-    base_url = os.environ.get("OPENAI_BASE_URL") or None
+    base_url = normalized_openai_base_url()
     kwargs: dict[str, Any] = {"api_key": os.environ["OPENAI_API_KEY"]}
     if base_url:
         kwargs["base_url"] = base_url
     return OpenAI(**kwargs)
+
+
+def normalized_openai_base_url() -> str | None:
+    raw_base_url = os.environ.get("OPENAI_BASE_URL")
+    base_url = raw_base_url.strip() if raw_base_url and raw_base_url.strip() else None
+    if raw_base_url is not None and base_url is None:
+        os.environ.pop("OPENAI_BASE_URL", None)
+    return base_url
 
 
 def _chat_text(client: Any, *, model: str, system: str, user: str) -> tuple[str, float]:
@@ -140,29 +227,10 @@ def _chat_text(client: Any, *, model: str, system: str, user: str) -> tuple[str,
     return response.choices[0].message.content or "", elapsed_ms
 
 
-def select_scenarios(
-    scenarios: list[dict[str, Any]],
-    config: dict[str, Any],
-    *,
-    skill_id: str | None = None,
-    scenario_id: str | None = None,
-    max_count: int | None = None,
-) -> list[dict[str, Any]]:
-    allowed = set(config.get("scenario_ids") or [])
-    selected = [scenario for scenario in scenarios if scenario["id"] in allowed]
-    if skill_id:
-        selected = [scenario for scenario in selected if scenario["skill_id"] == skill_id]
-    if scenario_id:
-        selected = [scenario for scenario in selected if scenario["id"] == scenario_id]
-    if max_count is not None:
-        selected = selected[: max(1, max_count)]
-    return selected
-
-
 def run_eval(
     *,
+    pack_slug: str = DEFAULT_PACK_SLUG,
     prompt_file: Path | None = None,
-    skill_id: str | None = None,
     scenario_id: str | None = None,
     max_count: int | None = None,
     output_json: Path | None = None,
@@ -171,40 +239,27 @@ def run_eval(
     if not os.environ.get("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is required for model-backed evals")
 
-    registry = {skill["id"]: skill for skill in load_skill_registry(ROOT)}
-    scenarios = select_scenarios(
-        load_json(SCENARIOS_PATH)["scenarios"],
-        load_json(CONFIG_PATH),
-        skill_id=skill_id,
-        scenario_id=scenario_id,
-        max_count=max_count,
-    )
-    rubric = RUBRIC_PATH.read_text(encoding="utf-8")
+    pack = load_pack(ROOT, pack_slug)
+    scenarios = select_scenarios(load_pack_scenarios(pack), scenario_id=scenario_id, max_count=max_count)
+    if not scenarios:
+        raise ValueError(f"No scenarios matched for pack {pack_slug}")
+    rubric = pack_path(pack, "judge_rubric").read_text(encoding="utf-8")
+    skill_prompt_path = prompt_file or pack_path(pack, "skill_prompt")
+    skill_prompt = skill_prompt_path.read_text(encoding="utf-8")
     client = _make_client()
     coach_model = os.environ.get("EVAL_COACH_MODEL", "gpt-4.1-mini")
     judge_model = os.environ.get("EVAL_JUDGE_MODEL", "gpt-4.1-mini")
 
     rows = []
     for scenario in scenarios:
-        skill = registry[scenario["skill_id"]]
-        skill_prompt_path = prompt_file or (ROOT / skill["prompt_path"])
-        skill_prompt = skill_prompt_path.read_text(encoding="utf-8")
-        assembled = build_skill_input(scenario, skill_prompt)
+        assembled = build_skill_input(pack, scenario, skill_prompt)
         coach_response, latency_ms = _chat_text(
             client,
             model=coach_model,
             system="You are the EOL Daily Coach. Follow the active skill prompt and tool contract.",
             user=assembled,
         )
-        judge_prompt = "\n\n".join(
-            [
-                rubric,
-                f"Scenario expected behavior: {scenario.get('expected_behavior', '')}",
-                "Scenario anti-patterns: " + json.dumps(scenario.get("anti_patterns") or []),
-                "Coach response:",
-                coach_response,
-            ]
-        )
+        judge_prompt = build_judge_prompt(pack, scenario, rubric, coach_response)
         judge_text, _judge_latency_ms = _chat_text(
             client,
             model=judge_model,
@@ -212,11 +267,12 @@ def run_eval(
             user=judge_prompt,
         )
         judge = _extract_json_object(judge_text)
-        judge["sqs"] = recompute_sqs(judge)
+        judge["sqs"] = recompute_sqs(judge, pack)
         rows.append(
             {
                 "scenario_id": scenario["id"],
-                "skill_id": scenario["skill_id"],
+                "pack_slug": pack["slug"],
+                "skill_id": pack["id"],
                 "sqs": judge["sqs"],
                 "latency_ms": round(latency_ms, 1),
                 "coach_response": coach_response,
@@ -225,6 +281,8 @@ def run_eval(
         )
 
     result = {
+        "pack_slug": pack["slug"],
+        "skill_id": pack["id"],
         "mean_sqs": round(sum(row["sqs"] for row in rows) / len(rows), 2) if rows else 0.0,
         "per_scenario": rows,
     }
@@ -233,10 +291,19 @@ def run_eval(
     return result
 
 
+def print_assembled_input(pack_slug: str, scenario_id: str | None = None, prompt_file: Path | None = None) -> str:
+    pack = load_pack(ROOT, pack_slug)
+    scenarios = select_scenarios(load_pack_scenarios(pack), scenario_id=scenario_id, max_count=1)
+    if not scenarios:
+        raise ValueError(f"No scenarios matched for pack {pack_slug}")
+    prompt_path = prompt_file or pack_path(pack, "skill_prompt")
+    return build_skill_input(pack, scenarios[0], prompt_path.read_text(encoding="utf-8"))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--pack", default=DEFAULT_PACK_SLUG)
     parser.add_argument("--prompt-file", type=Path)
-    parser.add_argument("--skill-id")
     parser.add_argument("--scenario-id")
     parser.add_argument("--max", type=int, dest="max_count")
     parser.add_argument("--output-json", type=Path)
@@ -244,24 +311,12 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.print_assembled_input:
-        registry = {skill["id"]: skill for skill in load_skill_registry(ROOT)}
-        scenarios = select_scenarios(
-            load_json(SCENARIOS_PATH)["scenarios"],
-            load_json(CONFIG_PATH),
-            skill_id=args.skill_id,
-            scenario_id=args.scenario_id,
-            max_count=1,
-        )
-        if not scenarios:
-            raise SystemExit("No scenario matched")
-        scenario = scenarios[0]
-        prompt_path = args.prompt_file or (ROOT / registry[scenario["skill_id"]]["prompt_path"])
-        print(build_skill_input(scenario, prompt_path.read_text(encoding="utf-8")))
+        print(print_assembled_input(args.pack, scenario_id=args.scenario_id, prompt_file=args.prompt_file))
         return 0
 
     result = run_eval(
+        pack_slug=args.pack,
         prompt_file=args.prompt_file,
-        skill_id=args.skill_id,
         scenario_id=args.scenario_id,
         max_count=args.max_count,
         output_json=args.output_json,

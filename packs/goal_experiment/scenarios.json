@@ -1,0 +1,354 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "goal_definition_new_sleep_goal",
+      "name": "New sleep goal asks what and why",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {}
+      },
+      "history": [],
+      "message": "I want to fix my sleep.",
+      "expected_behavior": "Ask one natural question that starts clarifying what they want to change and why it matters. Do not jump to a full experiment or metrics yet.",
+      "anti_patterns": [
+        "building a sleep plan immediately",
+        "asking multiple questions",
+        "using goal-setting language",
+        "asking for input and output metrics in the first reply"
+      ]
+    },
+    {
+      "id": "goal_definition_external_should_probe_why",
+      "name": "External should gets personal why probe",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {
+          "goalArea": "health",
+          "goalStatement": "exercise more"
+        }
+      },
+      "history": [],
+      "message": "I should exercise because I know I should be healthier.",
+      "expected_behavior": "Gently probe for a more personal reason using one question. Do not moralize or accept obligation as the full why.",
+      "anti_patterns": [
+        "reinforcing should language",
+        "jumping to daily workout design",
+        "asking several why questions",
+        "using discipline language"
+      ]
+    },
+    {
+      "id": "goal_definition_vague_metric_offer_framing",
+      "name": "Vague output metric gets concrete framing",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {
+          "goalArea": "sleep",
+          "goalStatement": "stop revenge bedtime scrolling",
+          "whyItMatters": "feel less wrecked in the morning"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "How will you know this is working? What would you actually see or measure?"
+        }
+      ],
+      "message": "I guess I'll just know if I feel better.",
+      "expected_behavior": "Do not accept 'feel better' as enough. Offer one concrete measurable framing and ask if it fits or if they would describe it differently.",
+      "anti_patterns": [
+        "accepting 'feel better' as the output metric",
+        "asking for a metric in technical language",
+        "offering many metrics",
+        "moving to system design before metric clarity"
+      ]
+    },
+    {
+      "id": "goal_definition_confirmed_metric_moves_on",
+      "name": "Confirmed observable metric moves to system design",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {
+          "goalArea": "sleep",
+          "goalStatement": "stop revenge bedtime scrolling",
+          "whyItMatters": "wake up less foggy",
+          "outputMetric": "phone-free bedtime nights"
+        }
+      },
+      "history": [],
+      "message": "Yeah, phone-free bedtime nights is the right thing to track.",
+      "expected_behavior": "Acknowledge the confirmed output metric and move toward system_design by asking about prior attempts or what has broken before.",
+      "anti_patterns": [
+        "asking for the same metric again",
+        "jumping to final preview",
+        "designing the daily action without prior-attempt context",
+        "adding multiple questions"
+      ]
+    },
+    {
+      "id": "system_design_previous_attempt_breakpoint",
+      "name": "Previous attempt is reflected in system terms",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "system_design",
+        "state": {
+          "goalArea": "exercise",
+          "goalStatement": "keep showing up for the gym",
+          "whyItMatters": "feel stronger and less stuck",
+          "outputMetric": "gym show-ups"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Have you tried to work on this before? What happened?"
+        }
+      ],
+      "message": "I go hard for a week, then miss one day and it all falls apart.",
+      "expected_behavior": "Reflect the breaking point in system terms and ask one question about the smallest daily action that could survive a hard day.",
+      "anti_patterns": [
+        "saying the user lacked discipline",
+        "ignoring the missed-day recovery problem",
+        "building a full workout plan",
+        "asking multiple diagnostic questions"
+      ]
+    },
+    {
+      "id": "system_design_too_ambitious_input",
+      "name": "Ambitious daily action gets smallest-version prompt",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "system_design",
+        "state": {
+          "goalArea": "writing",
+          "goalStatement": "make writing consistent",
+          "whyItMatters": "finish my thesis without panic",
+          "outputMetric": "writing days",
+          "previousAttempts": "tried long morning writing blocks and quit"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "What's the one thing you could do each day that would make this more likely to happen?"
+        }
+      ],
+      "message": "I could write for two hours every morning.",
+      "expected_behavior": "Reflect that this is the strong version and ask for the smallest version they could do even on a hard day.",
+      "anti_patterns": [
+        "accepting two hours as the daily action",
+        "praising discipline",
+        "building a schedule",
+        "asking multiple follow-ups"
+      ]
+    },
+    {
+      "id": "system_design_stuck_offer_options",
+      "name": "Stuck user gets two or three small input options",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "system_design",
+        "state": {
+          "goalArea": "hydration",
+          "goalStatement": "drink more water",
+          "whyItMatters": "avoid afternoon headaches",
+          "outputMetric": "headache-free afternoons",
+          "previousAttempts": "forgot unless bottle was visible"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "What's the one thing you could do each day that would make this more likely to happen?"
+        }
+      ],
+      "message": "I don't know. I blank on this stuff.",
+      "expected_behavior": "Offer two or three small behavior options based on the known context and ask which fits. Keep them controllable input actions.",
+      "anti_patterns": [
+        "leaving the user with an abstract open question",
+        "offering more than three options",
+        "suggesting outcome metrics instead of actions",
+        "making the user design everything alone"
+      ]
+    },
+    {
+      "id": "system_design_summary_ready_choice",
+      "name": "Confirmed daily action gets summary and ready/refine choice",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "system_design",
+        "state": {
+          "goalArea": "sleep",
+          "goalStatement": "stop revenge bedtime scrolling so mornings feel less foggy",
+          "whyItMatters": "have calmer mornings",
+          "previousAttempts": "phone stayed in bed",
+          "outputMetric": "phone-free bedtime nights",
+          "inputMetric": "put phone on desk before brushing teeth"
+        }
+      },
+      "history": [],
+      "message": "Putting the phone on my desk before brushing teeth feels doable.",
+      "expected_behavior": "Summarize Goal, Output metric, and Daily action in the specified format, present 2-week no-blame framing, and ask the ready-or-refine choice question.",
+      "anti_patterns": [
+        "finalizing without the ready/refine choice",
+        "missing one of the three summary bullets",
+        "using failure language",
+        "adding extra tips"
+      ]
+    },
+    {
+      "id": "optimization_concern_simplify",
+      "name": "Optimization phase simplifies concerns",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "optimization",
+        "state": {
+          "goalArea": "finance",
+          "goalStatement": "feel less avoidant about money",
+          "whyItMatters": "stop getting surprised by bills",
+          "outputMetric": "days I know my account balance",
+          "inputMetric": "check balance after morning coffee"
+        }
+      },
+      "history": [],
+      "message": "I worry I'll avoid it if the number looks bad.",
+      "expected_behavior": "Treat the concern as design iteration, simplify or strengthen the system, and ask one question about the refined version.",
+      "anti_patterns": [
+        "dismissing the concern",
+        "telling them to be disciplined",
+        "finalizing without refinement",
+        "adding a complex money routine"
+      ]
+    },
+    {
+      "id": "completed_confirm_start_date",
+      "name": "Completed phase asks final start-date confirmation",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "completed",
+        "state": {
+          "goalArea": "exercise",
+          "goalStatement": "keep showing up for the gym after motivation drops",
+          "whyItMatters": "feel stronger and less stuck",
+          "outputMetric": "gym show-ups",
+          "inputMetric": "put on gym clothes after work and go for 10 minutes"
+        }
+      },
+      "history": [],
+      "message": "This feels ready.",
+      "expected_behavior": "Show final preview with Goal, Output metric, Daily action, and Start date slot; include no-blame 2-week framing; ask whether to start today or another day.",
+      "anti_patterns": [
+        "completing without start date confirmation",
+        "missing final preview details",
+        "adding extra advice",
+        "using commitment/failure framing"
+      ]
+    },
+    {
+      "id": "completed_start_date_given_completes",
+      "name": "Given start date completes skill",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "completed",
+        "state": {
+          "goalArea": "sleep",
+          "goalStatement": "stop revenge bedtime scrolling",
+          "whyItMatters": "wake up less foggy",
+          "outputMetric": "phone-free bedtime nights",
+          "inputMetric": "put phone on desk before brushing teeth"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "Does this feel right? Want to start today, or is there a better day to begin?"
+        }
+      ],
+      "message": "Let's start tomorrow.",
+      "expected_behavior": "Record tomorrow as experimentStartDate, acknowledge warmly in one sentence, and complete with collected state. Do not add extra advice.",
+      "anti_patterns": [
+        "asking another setup question",
+        "failing to complete",
+        "missing start date",
+        "adding tips or caveats"
+      ]
+    },
+    {
+      "id": "handoff_day_planning",
+      "name": "Day planning request hands off",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {}
+      },
+      "history": [],
+      "message": "Actually I just need help planning today.",
+      "expected_behavior": "Recognize day planning is outside scope and hand off rather than starting a goal experiment.",
+      "anti_patterns": [
+        "asking what life goal they want to change",
+        "building a two-week experiment",
+        "ignoring the topic switch",
+        "planning the day inside this skill"
+      ]
+    },
+    {
+      "id": "existing_experiment_checkin_handoff",
+      "name": "Existing experiment check-in does not restart skill",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "goal_definition",
+        "state": {}
+      },
+      "history": [],
+      "message": "I already have a sleep experiment going. I just want to check in on it.",
+      "expected_behavior": "Do not restart setup. Hand off or surface existing experiment context instead of designing a new one.",
+      "anti_patterns": [
+        "asking for a new goal",
+        "rebuilding the same experiment",
+        "asking for output metrics",
+        "ignoring that the experiment already exists"
+      ]
+    },
+    {
+      "id": "explicit_cancel",
+      "name": "Explicit cancellation ends the skill",
+      "skill_id": "daily.goal_experiment",
+      "active_session": {
+        "status": "active",
+        "phase": "system_design",
+        "state": {
+          "goalArea": "sleep",
+          "goalStatement": "stop scrolling"
+        }
+      },
+      "history": [],
+      "message": "Stop. I don't want to set up an experiment right now.",
+      "expected_behavior": "Respect the stop request and cancel without another setup question.",
+      "anti_patterns": [
+        "trying to persuade the user",
+        "offering a smaller experiment",
+        "asking why they want to stop",
+        "handoffing instead of cancelling"
+      ]
+    }
+  ]
+}
+
