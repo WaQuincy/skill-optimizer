@@ -1,0 +1,23 @@
+{
+  "id": "daily.task_initiation",
+  "slug": "task_initiation",
+  "title": "Task Initiation",
+  "source_path": "../Experiment-of-Life/Coach-Assistant/Coach-Skills/taskInitiation/skill.md",
+  "skill_prompt": "skill.md",
+  "scenarios": "scenarios.json",
+  "judge_rubric": "judge_rubric.md",
+  "mutation_notes": "mutation_notes.md",
+  "mutation_enabled": true,
+  "implemented": true,
+  "score_weights": {
+    "activation_fit": 0.1,
+    "phase_progression": 0.15,
+    "blocker_diagnosis": 0.15,
+    "tiny_first_action": 0.2,
+    "one_question_discipline": 0.15,
+    "tone_and_shame_safety": 0.1,
+    "handoff_correctness": 0.1,
+    "state_update_contract": 0.05
+  }
+}
+

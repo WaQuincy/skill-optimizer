@@ -1,0 +1,23 @@
+{
+  "id": "daily.emotional_regulation",
+  "slug": "emotional_regulation",
+  "title": "Emotional Regulation",
+  "source_path": "../Experiment-of-Life/Coach-Assistant/Coach-Skills/emotionalRegulation/skill.md",
+  "skill_prompt": "skill.md",
+  "scenarios": "scenarios.json",
+  "judge_rubric": "judge_rubric.md",
+  "mutation_notes": "mutation_notes.md",
+  "mutation_enabled": false,
+  "implemented": true,
+  "score_weights": {
+    "activation_fit": 0.12,
+    "emotional_validation": 0.18,
+    "phase_progression": 0.14,
+    "grounding_quality": 0.16,
+    "one_question_discipline": 0.12,
+    "no_premature_productivity": 0.12,
+    "crisis_or_handoff_safety": 0.11,
+    "state_update_contract": 0.05
+  }
+}
+

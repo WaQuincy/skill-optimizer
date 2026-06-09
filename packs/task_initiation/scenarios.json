@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "vague_stuck_name_one_task",
+      "name": "Vague stuckness should name one task",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I have so much to do and I don't know where to begin.",
+      "expected_behavior": "Normalize the stuckness and ask one simple question that helps the user name the one task most on their mind. Do not list suggestions yet.",
+      "anti_patterns": [
+        "offering a menu of tasks",
+        "making a full plan",
+        "asking more than one question",
+        "using willpower or discipline language"
+      ]
+    },
+    {
+      "id": "specific_task_move_to_diagnose",
+      "name": "Specific stuck task moves toward diagnosis",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I need to start the quarterly report but I keep opening my phone instead.",
+      "expected_behavior": "Capture the quarterly report as targetTask, normalize without shame, and move toward diagnosing why it is stuck with at most one targeted question.",
+      "anti_patterns": [
+        "asking what task they mean",
+        "jumping straight to a generic productivity tip",
+        "creating or updating a task",
+        "asking multiple diagnostic questions"
+      ]
+    },
+    {
+      "id": "too_big_first_physical_action",
+      "name": "Too-big blocker gets one physical first action",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "diagnose",
+        "state": {
+          "targetTask": "clean the apartment"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "What about cleaning the apartment is making it hard to start?"
+        }
+      ],
+      "message": "It's huge. I don't even know what counts as starting.",
+      "expected_behavior": "Identify blockerType too_big and offer one tiny visible physical first action, such as putting one dish in the sink or opening one trash bag. Do not offer alternatives.",
+      "anti_patterns": [
+        "making a room-by-room plan",
+        "offering several options",
+        "asking the user to break it down themselves",
+        "continuing diagnosis after the blocker is clear"
+      ]
+    },
+    {
+      "id": "too_boring_add_constraint",
+      "name": "Too-boring blocker gets a dopamine constraint",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "diagnose",
+        "state": {
+          "targetTask": "submit expense receipts"
+        }
+      },
+      "history": [],
+      "message": "The receipts are easy. They're just so boring that I can't make myself care.",
+      "expected_behavior": "Identify blockerType too_boring and offer one concrete constraint such as a five-minute timer, location shift, or body-double style cue.",
+      "anti_patterns": [
+        "telling the user to care about consequences",
+        "giving a full admin workflow",
+        "offering multiple options",
+        "moralizing about responsibility"
+      ]
+    },
+    {
+      "id": "decision_paralysis_pick_one",
+      "name": "Decision paralysis removes the choice",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "diagnose",
+        "state": {}
+      },
+      "history": [],
+      "message": "I have emails, laundry, a proposal, and tax stuff, and I keep switching without doing any of them.",
+      "expected_behavior": "Identify blockerType decision_paralysis, pick one task plainly, and say the others can wait. Do not ask the user to choose between all of them.",
+      "anti_patterns": [
+        "asking the user to rank all tasks",
+        "planning the whole day",
+        "offering a priority matrix",
+        "choosing more than one first task"
+      ]
+    },
+    {
+      "id": "emotional_flooding_handoff",
+      "name": "Shame spiral hands off to emotional regulation",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "diagnose",
+        "state": {
+          "targetTask": "reply to my professor"
+        }
+      },
+      "history": [],
+      "message": "I hate myself. I always ruin things. I can't think and I feel like a complete failure.",
+      "expected_behavior": "Detect emotional_flooding and hand off to Emotional Regulation without pushing productivity or a first action.",
+      "anti_patterns": [
+        "suggesting a tiny task anyway",
+        "telling the user to calm down so they can work",
+        "minimizing the shame",
+        "continuing task initiation"
+      ]
+    },
+    {
+      "id": "unrelated_project_review_handoff",
+      "name": "Unrelated project review request hands off",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "Actually can you review my whole project list and tell me what matters this week?",
+      "expected_behavior": "Recognize this is outside Task Initiation and return handoff rather than forcing a tiny first action.",
+      "anti_patterns": [
+        "continuing task initiation",
+        "choosing one task from the project list without enough context",
+        "building a weekly review",
+        "ignoring the topic switch"
+      ]
+    },
+    {
+      "id": "accepts_first_action_move_to_commit",
+      "name": "Accepted first action moves to commit",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "intervene",
+        "state": {
+          "targetTask": "write the intro",
+          "blockerType": "too_big",
+          "firstAction": "open the document and write one rough sentence"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "The move is: open the document and write one rough sentence."
+        }
+      ],
+      "message": "Okay, that feels doable.",
+      "expected_behavior": "Move to commit by asking one question about what they will do and when. Keep the action concrete and do not add new advice.",
+      "anti_patterns": [
+        "adding more steps",
+        "asking whether they feel motivated",
+        "opening a broader planning conversation",
+        "completing before the timeframe is stated"
+      ]
+    },
+    {
+      "id": "user_proposes_own_first_action",
+      "name": "User's own first action is accepted",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "intervene",
+        "state": {
+          "targetTask": "answer the client email",
+          "blockerType": "too_big"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "The first move is to open the email and read only the first line."
+        }
+      ],
+      "message": "Maybe I'll just draft the first sentence instead.",
+      "expected_behavior": "Accept the user's proposed firstAction and ask one commit question about when they will do it.",
+      "anti_patterns": [
+        "arguing for the coach's original action",
+        "adding extra email steps",
+        "asking several clarification questions",
+        "treating the user's idea as wrong"
+      ]
+    },
+    {
+      "id": "clear_task_create_request_no_unasked_update",
+      "name": "Task creation is not done unless clearly requested",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "start",
+        "state": {}
+      },
+      "history": [],
+      "message": "I can't start packing for the trip. Maybe remind me later too.",
+      "expected_behavior": "Focus on task initiation unless the user clearly asks to create or update an app object; do not invent a reminder or task action. Ask at most one relevant question.",
+      "anti_patterns": [
+        "creating a reminder without confirmation",
+        "turning the flow into task management",
+        "ignoring the packing stuckness",
+        "asking multiple setup questions"
+      ]
+    },
+    {
+      "id": "commit_with_timeframe_completes",
+      "name": "Action plus timeframe completes the skill",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "commit",
+        "state": {
+          "targetTask": "send the invoice",
+          "blockerType": "too_boring",
+          "firstAction": "set a 5-minute timer and open the invoice tab"
+        }
+      },
+      "history": [
+        {
+          "role": "assistant",
+          "content": "What are you doing, and when?"
+        }
+      ],
+      "message": "I'll set the timer and open the invoice tab now.",
+      "expected_behavior": "Confirm the commitment in one sentence and complete the skill with firstAction and timeframe in state.",
+      "anti_patterns": [
+        "asking another question",
+        "adding encouragement or caveats",
+        "continuing the skill after commitment",
+        "failing to complete"
+      ]
+    },
+    {
+      "id": "explicit_cancel",
+      "name": "Explicit cancellation ends the skill",
+      "skill_id": "daily.task_initiation",
+      "active_session": {
+        "status": "active",
+        "phase": "diagnose",
+        "state": {
+          "targetTask": "file taxes"
+        }
+      },
+      "history": [],
+      "message": "I don't want to do this right now. Stop.",
+      "expected_behavior": "Respect the stop request and cancel the skill without coaching or asking another question.",
+      "anti_patterns": [
+        "trying to persuade the user",
+        "offering one more tiny action",
+        "asking why they want to stop",
+        "handoffing instead of cancelling"
+      ]
+    }
+  ]
+}
+

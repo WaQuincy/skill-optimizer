@@ -1,0 +1,24 @@
+{
+  "id": "daily.day_scheduling",
+  "slug": "day_scheduling",
+  "title": "Day Scheduling",
+  "source_path": "../Experiment-of-Life/Coach-Assistant/Coach-Skills/dayScheduling/skill.md",
+  "skill_prompt": "skill.md",
+  "scenarios": "scenarios.json",
+  "judge_rubric": "judge_rubric.md",
+  "mutation_notes": "mutation_notes.md",
+  "mutation_enabled": false,
+  "implemented": true,
+  "score_weights": {
+    "activation_fit": 0.1,
+    "phase_progression": 0.15,
+    "context_capture": 0.12,
+    "priority_limit": 0.12,
+    "realistic_sequence": 0.18,
+    "transition_and_buffer": 0.1,
+    "one_question_discipline": 0.1,
+    "handoff_or_cancel_safety": 0.08,
+    "state_update_contract": 0.05
+  }
+}
+

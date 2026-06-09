@@ -17,10 +17,11 @@ on:
         options:
           - eval-only
           - optimize
-      skill_id:
-        description: Skill id to evaluate
+          - all-enabled
+      pack:
+        description: Pack slug to evaluate
         required: true
-        default: daily.overcome_procrastination
+        default: task_initiation
 
 concurrency:
   group: skill-optimizer
@@ -63,16 +64,18 @@ jobs:
             exit 2
           fi
           if [ "${{ inputs.mode }}" = "eval-only" ]; then
-            python orchestrator.py --eval-only --skill-id "${{ inputs.skill_id }}"
+            python orchestrator.py --eval-only --pack "${{ inputs.pack }}"
+          elif [ "${{ inputs.mode }}" = "all-enabled" ]; then
+            python orchestrator.py --all-enabled --optimize
           else
-            python orchestrator.py --skill-id "${{ inputs.skill_id }}"
+            python orchestrator.py --optimize --pack "${{ inputs.pack }}"
           fi
 
       - name: Publish summary
         if: always()
         run: |
           echo "## Skill optimizer" >> "$GITHUB_STEP_SUMMARY"
-          latest_summary="$(ls -t results/summaries/*.md 2>/dev/null | head -n 1 || true)"
+          latest_summary="$(ls -t packs/*/results/summaries/*.md 2>/dev/null | head -n 1 || true)"
           if [ -n "$latest_summary" ]; then
             cat "$latest_summary" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -86,6 +89,6 @@ jobs:
           name: skill-optimizer-results-${{ github.run_number }}
           if-no-files-found: warn
           path: |
-            results/experiments/*.json
-            results/summaries/*.md
-            prompts/challenger_preview.md
+            packs/*/results/experiments/*.json
+            packs/*/results/summaries/*.md
+            packs/*/challenger_preview.md

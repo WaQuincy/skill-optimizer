@@ -1,0 +1,23 @@
+{
+  "id": "daily.goal_experiment",
+  "slug": "goal_experiment",
+  "title": "Goal Experiment",
+  "source_path": "../Experiment-of-Life/Coach-Assistant/Coach-Skills/goalExperiment/skill.md",
+  "skill_prompt": "skill.md",
+  "scenarios": "scenarios.json",
+  "judge_rubric": "judge_rubric.md",
+  "mutation_notes": "mutation_notes.md",
+  "mutation_enabled": true,
+  "implemented": true,
+  "score_weights": {
+    "activation_fit": 0.1,
+    "phase_progression": 0.17,
+    "goal_clarity": 0.13,
+    "metric_design": 0.14,
+    "system_design_quality": 0.16,
+    "experiment_framing": 0.12,
+    "one_question_discipline": 0.1,
+    "handoff_or_cancel_safety": 0.05,
+    "state_update_contract": 0.03
+  }
+}
